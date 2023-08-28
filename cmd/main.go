@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/khoaphungnguyen/learning-tracker/internal/api"
@@ -20,7 +21,7 @@ func main() {
 		Addr:    port,
 		Handler: router,
 	}
-
+	fmt.Printf("Server listening on port %s\n", port)
 	err := server.ListenAndServe()
 	if err != nil {
 		panic(err)
