@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -19,29 +20,18 @@ var learningEntries = []LearningEntry{
 	{ID: 2, Title: "Learning Python", Description: "Learn Python", Completed: false},
 }
 
-// Handler function for API routes
 func handleAllLearningEntries(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		// Retrieve and return all learning entries
-		json.NewEncoder(w).Encode(learningEntries)
-	case http.MethodPost:
-		// Create a new learning entry
-		var newEntry LearningEntry
-		err := json.NewDecoder(r.Body).Decode(&newEntry)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		}
-		newEntry.ID = len(learningEntries) + 1
-		learningEntries = append(learningEntries, newEntry)
-		w.WriteHeader(http.StatusCreated)
-	}
-
-}
-
-func handleSingleLearningEntry(w http.ResponseWriter, r *http.Request) {
 	queryValues := r.URL.Query()
 	entryIDParam := queryValues.Get("id")
+
+	if entryIDParam == "" && r.Method == http.MethodGet {
+		// If no 'id' query parameter is provided, fetch and return all entries
+		fmt.Println("GET Method: Get all records")
+		json.NewEncoder(w).Encode(learningEntries)
+		return
+	}
+
+	// If 'id' query parameter is provided, fetch and return the specific entry
 	entryID, err := strconv.Atoi(entryIDParam)
 	if err != nil {
 		http.Error(w, "Invalid entry ID", http.StatusBadRequest)
@@ -53,6 +43,7 @@ func handleSingleLearningEntry(w http.ResponseWriter, r *http.Request) {
 		// Retrieve and return a single learning entry
 		for _, entry := range learningEntries {
 			if entry.ID == entryID {
+				fmt.Println("GET Method: Get one records")
 				json.NewEncoder(w).Encode(entry)
 				return
 			}
@@ -69,6 +60,7 @@ func handleSingleLearningEntry(w http.ResponseWriter, r *http.Request) {
 		for index, entry := range learningEntries {
 			if entry.ID == entryID {
 				learningEntries[index] = updatedEntry
+				fmt.Println("PUT Method: Changed a record")
 				w.WriteHeader(http.StatusOK)
 				return
 			}
@@ -80,10 +72,25 @@ func handleSingleLearningEntry(w http.ResponseWriter, r *http.Request) {
 		for index, entry := range learningEntries {
 			if entry.ID == entryID {
 				learningEntries = append(learningEntries[:index], learningEntries[index+1:]...)
+				fmt.Println("DELETE Method: Delete a record")
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
 			http.Error(w, "Entry not found", http.StatusNotFound)
 		}
 	}
+}
+
+func handleAddNewEntry(w http.ResponseWriter, r *http.Request) {
+	var newEntry LearningEntry
+	err := json.NewDecoder(r.Body).Decode(&newEntry)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	newEntry.ID = len(learningEntries) + 1
+	learningEntries = append(learningEntries, newEntry)
+	fmt.Println("POST Method: Add a record")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(fmt.Sprintf("New entry added successfully with ID %d", newEntry.ID)))
 }
