@@ -9,4 +9,6 @@ func SetupRoutes(router *http.ServeMux) {
 	//Define routes
 	router.HandleFunc("/api/entries", handleAllLearningEntries)
 	router.HandleFunc("/api/entries/add", handleAddNewEntry)
+	router.HandleFunc("/api/goal/add", handleAddNewGoal)
+	router.HandleFunc("/api/goal", handleAllGoal)
 }
