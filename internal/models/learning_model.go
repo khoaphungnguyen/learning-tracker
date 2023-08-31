@@ -7,7 +7,7 @@ type LearningEntry struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	Date        time.Time `json:"date"`
-	Completed   bool      `json:"completed"`
+	Status      string    `json:"completed"`
 }
 
 type LearningGoals struct {

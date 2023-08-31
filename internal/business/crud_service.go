@@ -34,12 +34,12 @@ func (s *LearningService) GetEntryByID(id int) (models.LearningEntry, error) {
 	return s.learningStore.GetEntryByID(id)
 }
 
-func (s *LearningService) CreateEntry(goalID int, title string, description string, date time.Time, completed bool) (int64, error) {
-	return s.learningStore.CreateEntry(goalID, title, description, date, completed)
+func (s *LearningService) CreateEntry(goalID int, title string, description string) (int64, error) {
+	return s.learningStore.CreateEntry(goalID, title, description)
 }
 
-func (s *LearningService) UpdateEntry(id int, title string, description string, date time.Time, completed bool) error {
-	return s.learningStore.UpdateEntry(id, title, description, date, completed)
+func (s *LearningService) UpdateEntry(id int, title string, description string, date time.Time, status string) error {
+	return s.learningStore.UpdateEntry(id, title, description, date, status)
 }
 
 func (s *LearningService) DeleteEntry(id int) error {

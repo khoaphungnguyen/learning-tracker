@@ -28,8 +28,8 @@ func (service *learningStore) CreateTable() error {
 			goal_id INTEGER,
 			title TEXT,
 			description TEXT,
-			date DATETIME,
-			completed BOOLEAN,
+			date DATETIME DEFAULT CURRENT_TIMESTAMP,
+			status TEXT DEFAULT 'Not Started',
 			FOREIGN KEY (goal_id) REFERENCES learning_goals(id)
 		)
 	`)
@@ -40,14 +40,11 @@ func (service *learningStore) CreateTable() error {
 	return nil
 }
 
-func (service *learningStore) CreateEntry(goalID int, title string, description string, date time.Time, completed bool) (int64, error) {
-	// Convert date to Unix timestamp
-	dateUnix := date.Unix()
-
+func (service *learningStore) CreateEntry(goalID int, title string, description string) (int64, error) {
 	// Insert the entry
 	result, err := service.DB.Exec(`
-		INSERT INTO learning_entries (goal_id, title, description, date, completed) VALUES (?, ?, ?, ?, ?)
-	`, goalID, title, description, dateUnix, completed)
+		INSERT INTO learning_entries (goal_id, title, description) VALUES (?, ?, ?)
+	`, goalID, title, description)
 
 	if err != nil {
 		return 0, err
@@ -57,11 +54,11 @@ func (service *learningStore) CreateEntry(goalID int, title string, description 
 	return newID, err
 }
 
-func (service *learningStore) UpdateEntry(id int, title string, description string, date time.Time, completed bool) error {
+func (service *learningStore) UpdateEntry(id int, title string, description string, date time.Time, status string) error {
 	// Update the entry
 	_, err := service.DB.Exec(`
-		UPDATE learning_entries SET title=?, description=?, date=?, completed=? WHERE id=?
-	`, title, description, date, completed, id)
+		UPDATE learning_entries SET title=?, description=?, date=?, status=? WHERE id=?
+	`, title, description, date, status, id)
 
 	if err != nil {
 		return err
@@ -85,8 +82,8 @@ func (service *learningStore) GetEntryByID(id int) (models.LearningEntry, error)
 	// Get the entry
 	var entry models.LearningEntry
 	err := service.DB.QueryRow(`
-		SELECT id, title, description, date, completed FROM learning_entries WHERE id=?
-	`, id).Scan(&entry.ID, &entry.Title, &entry.Description, &entry.Date, &entry.Completed)
+		SELECT id, title, description, date, status FROM learning_entries WHERE id=?
+	`, id).Scan(&entry.ID, &entry.Title, &entry.Description, &entry.Date, &entry.Status)
 
 	if err != nil {
 		return entry, err
@@ -98,7 +95,7 @@ func (service *learningStore) GetAllEntriesByGoalID(goalID int) ([]models.Learni
 	// Get all entries for the specified goalID
 	var entries []models.LearningEntry
 	rows, err := service.DB.Query(`
-		SELECT id, title, description, date, completed FROM learning_entries WHERE goal_id=?
+		SELECT id, title, description, date, status FROM learning_entries WHERE goal_id=?
 	`, goalID)
 	if err != nil {
 		return entries, err
@@ -107,7 +104,7 @@ func (service *learningStore) GetAllEntriesByGoalID(goalID int) ([]models.Learni
 
 	for rows.Next() {
 		var entry models.LearningEntry
-		err = rows.Scan(&entry.ID, &entry.Title, &entry.Description, &entry.Date, &entry.Completed)
+		err = rows.Scan(&entry.ID, &entry.Title, &entry.Description, &entry.Date, &entry.Status)
 		if err != nil {
 			return entries, err
 		}

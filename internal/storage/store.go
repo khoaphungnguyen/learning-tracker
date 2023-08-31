@@ -10,9 +10,9 @@ import (
 
 type LearningStore interface {
 	CreateTable() error
-	CreateEntry(goalID int, title string, description string, date time.Time, completed bool) (int64, error)
+	CreateEntry(goalID int, title string, description string) (int64, error)
 	CreateGoal(title string, startDate time.Time, endDate time.Time) (int64, error)
-	UpdateEntry(id int, title string, description string, date time.Time, completed bool) error
+	UpdateEntry(id int, title string, description string, date time.Time, status string) error
 	UpdateGoal(id int, title string, startDate time.Time, endDate time.Time) error
 	DeleteEntry(id int) error
 	DeleteGoal(id int) error

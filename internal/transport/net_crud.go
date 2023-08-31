@@ -23,7 +23,7 @@ func (h *NetHandler) handleAddNewEntry(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	newId, err := h.netHandler.CreateEntry(goalID, newEntry.Title, newEntry.Description, newEntry.Date, newEntry.Completed)
+	newId, err := h.netHandler.CreateEntry(goalID, newEntry.Title, newEntry.Description)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -78,7 +78,7 @@ func (h *NetHandler) handleAllLearningEntries(w http.ResponseWriter, r *http.Req
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		err = h.netHandler.UpdateEntry(entryID, updatedEntry.Title, updatedEntry.Description, updatedEntry.Date, updatedEntry.Completed)
+		err = h.netHandler.UpdateEntry(entryID, updatedEntry.Title, updatedEntry.Description, updatedEntry.Date, updatedEntry.Status)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
