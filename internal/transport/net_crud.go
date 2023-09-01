@@ -3,8 +3,11 @@ package transport
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 
 	"github.com/khoaphungnguyen/learning-tracker/internal/models"
 )
@@ -172,6 +175,60 @@ func (h *NetHandler) handleAllGoal(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+}
+
+// Handle user file upload
+func (h *NetHandler) handleUserFileUpload(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		// Parse our multipart form, 10 << 20 specifies a maximum upload of 10 MB files
+		err := r.ParseMultipartForm(10 << 20)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		files := r.MultipartForm.File["files"]
+
+		for _, fileHeader := range files {
+			file, err := fileHeader.Open()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			defer file.Close()
+
+			fileSize := fileHeader.Size
+			maxFileSize := int64(25 << 20) // 25 MB
+			if fileSize > maxFileSize {
+				http.Error(w, "Uploaded file exceeds maximum file size limit (25MB)", http.StatusRequestEntityTooLarge)
+				return
+			}
+
+			// Generate a timestamp-based unique filename
+			currentTime := time.Now().Format("20060102150405") // Format: YYYYMMDDHHMMSS
+			uniqueFilename := currentTime + "_" + fileHeader.Filename
+
+			// Save the file using the uniqueFilename
+			f, err := os.Create("./uploads/" + uniqueFilename)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			defer f.Close()
+
+			// Copy the uploaded file to the created file on the filesystem
+			_, err = io.Copy(f, file)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		w.Write([]byte("File uploaded successfully"))
+	} else {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 }

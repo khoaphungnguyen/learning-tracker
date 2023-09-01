@@ -15,4 +15,5 @@ func (h *NetHandler) SetupRoutes(router *http.ServeMux) {
 	//Route for goals
 	router.HandleFunc("/api/goals", h.handleAllGoal)
 	router.HandleFunc("/api/goals/add", h.handleAddNewGoal)
+	router.HandleFunc("/api/upload", h.handleUserFileUpload)
 }
