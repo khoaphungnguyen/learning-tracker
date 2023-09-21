@@ -9,17 +9,35 @@ import (
 )
 
 type LearningStore interface {
+	// Table operations
 	CreateTable() error
-	CreateEntry(goalID int, title string, description string) (int64, error)
-	CreateGoal(title string, startDate time.Time, endDate time.Time) (int64, error)
-	UpdateEntry(id int, title string, description string, date time.Time, status string) error
-	UpdateGoal(id int, title string, startDate time.Time, endDate time.Time) error
-	DeleteEntry(id int) error
+
+	// User operations
+	CreateUser(username string, passwordHash string, firstName string, lastName string) (int64, error)
+	UpdateUser(id int, username string, firstName string, lastName string) error
+	DeleteUser(id int) error
+	GetUserByID(id int) (models.User, error)
+
+	// Learning goal operations
+	CreateGoal(userID int, title string, startDate time.Time, endDate time.Time) (int64, error)
+	UpdateGoal(id int, userID int, title string, startDate time.Time, endDate time.Time) error
 	DeleteGoal(id int) error
-	GetAllEntriesByGoalID(goalID int) ([]models.LearningEntry, error)
-	GetAllGoals() ([]models.LearningGoals, error)
+	GetAllGoalsByUserID(userID int) ([]models.LearningGoals, error)
 	GetGoalByID(id int) (models.LearningGoals, error)
-	GetEntryByID(id int) (models.LearningEntry, error)
+
+	// Learning entry operations
+    CreateEntry(goalID int, title string, description string) (int64, error)
+    UpdateEntry(id int, title string, description string, date time.Time, status string) error
+    DeleteEntry(id int) error
+    GetAllEntriesByGoalID(goalID int) ([]models.LearningEntry, error)
+    GetEntryByID(id int) (models.LearningEntry, error)
+
+	// Learning file operations
+	CreateFile(goalID int, ownerID int, fileName string, fileSize int64, fileType string, filePath string) (int64, error)
+	UpdateFile(id int, goalID int, ownerID int, fileName string, fileSize int64, fileType string) error
+	DeleteFile(id int) error
+	GetAllFilesByGoalID(goalID int) ([]models.LearningFiles, error)
+	GetFileByID(id int) (models.LearningFiles, error)
 }
 
 type learningStore struct {

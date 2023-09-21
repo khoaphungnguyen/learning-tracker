@@ -6,14 +6,19 @@ import (
 
 // SetupRoutes sets up all the routes for the API
 func (h *NetHandler) SetupRoutes(router *http.ServeMux) {
-	// Create a new storage instance
+	// Routes for users
+	router.HandleFunc("/api/users", h.handleUsers)
+	router.HandleFunc("/api/users/add", h.handleNewUser)
 
-	//Route for entries
-	router.HandleFunc("/api/entries", h.handleAllLearningEntries)
-	router.HandleFunc("/api/entries/add", h.handleAddNewEntry)
+	// Routes for entries
+	router.HandleFunc("/api/entries", h.handleEntries)
+	router.HandleFunc("/api/entries/add", h.handleNewEntry)
 
-	//Route for goals
-	router.HandleFunc("/api/goals", h.handleAllGoal)
-	router.HandleFunc("/api/goals/add", h.handleAddNewGoal)
-	router.HandleFunc("/api/upload", h.handleUserFileUpload)
+	// Routes for goals
+	router.HandleFunc("/api/goals", h.handleGoals)
+	router.HandleFunc("/api/goals/add", h.handleNewGoal)
+
+	// Routes for file operations
+	router.HandleFunc("/api/files", h.handleFiles)
+	router.HandleFunc("/api/files/add", h.handleNewFile)
 }
