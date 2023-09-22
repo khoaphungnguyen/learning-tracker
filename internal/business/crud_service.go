@@ -8,8 +8,8 @@ import (
 
 // User Operations
 
-func (s *LearningService) CreateUser(username string, passwordHash string, firstName string, lastName string) (int64, error) {
-	return s.learningStore.CreateUser(username, passwordHash, firstName, lastName)
+func (s *LearningService) CreateUser(username string, passwordHash string, salt []byte, firstName string, lastName string) (int64, error) {
+	return s.learningStore.CreateUser(username, passwordHash, salt, firstName, lastName)
 }
 
 func (s *LearningService) UpdateUser(id int, username string, firstName string, lastName string) error {
@@ -22,6 +22,10 @@ func (s *LearningService) DeleteUser(id int) error {
 
 func (s *LearningService) GetUserByID(id int) (models.User, error) {
 	return s.learningStore.GetUserByID(id)
+}
+
+func (s *LearningService) GetUserByUsername(username string) (models.User, error) {
+	return s.learningStore.GetUserByUsername(username)
 }
 
 // Learning Goal Operations

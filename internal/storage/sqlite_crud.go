@@ -14,6 +14,7 @@ func (service *learningStore) CreateTable() error {
 			id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 			username TEXT UNIQUE,
 			password_hash TEXT,
+			salt BLOB,  
 			first_name TEXT,
 			last_name TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -105,6 +106,20 @@ func (service *learningStore) GetUserByID(id int) (models.User, error) {
 	}
 	return user, nil
 }
+
+// GetUserByUserName return a user's details in the database
+func (service *learningStore) GetUserByUsername(username string) (models.User, error) {
+	var user models.User
+	err := service.DB.QueryRow(`
+		SELECT id, username, first_name, last_name, created_at, updated_at, role FROM users WHERE username=?
+	`, username).Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName, &user.CreatedAt, &user.UpdatedAt, &user.Role)
+
+	if err != nil {
+		return user, err
+	}
+	return user, nil
+}
+
 
 // UpdateUser updates a user's details in the database
 func (service *learningStore) UpdateUser(id int, username string, firstName string, lastName string) error {

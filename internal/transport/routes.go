@@ -8,7 +8,9 @@ import (
 func (h *NetHandler) SetupRoutes(router *http.ServeMux) {
 	// Routes for users
 	router.HandleFunc("/api/users", h.handleUsers)
-	router.HandleFunc("/api/users/add", h.handleNewUser)
+
+	// Routes for auth
+	router.HandleFunc("/api/auth/signin", h.handleSignIn)
 
 	// Routes for entries
 	router.HandleFunc("/api/entries", h.handleEntries)
