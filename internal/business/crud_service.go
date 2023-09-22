@@ -45,6 +45,10 @@ func (s *LearningService) DeleteGoal(id int) error {
 	return s.learningStore.DeleteGoal(id)
 }
 
+func (s *LearningService) GetAllGoalsByUserID(userID int) ([]models.LearningGoals, error) {
+	return s.learningStore.GetAllGoalsByUserID(userID)
+}
+
 // Learning Entry Operations
 
 func (s *LearningService) GetAllEntriesByGoalID(goalID int) ([]models.LearningEntry, error) {

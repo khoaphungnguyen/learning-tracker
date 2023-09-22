@@ -64,15 +64,21 @@ func (h *NetHandler) handleSignIn(w http.ResponseWriter, r *http.Request) {
 // handleUsers manages CRUD operations for the User model
 func (h *NetHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 	queryValues := r.URL.Query()
-	usernameParam := queryValues.Get("username")
+	userIDParam := queryValues.Get("userID")
+	userID, err := strconv.Atoi(queryValues.Get("userID"))
+	if err != nil {
+		http.Error(w, "Invalid UserID", http.StatusBadRequest)
+		return
+	}
 	switch r.Method {
 	case http.MethodGet:
 		// If no 'id' query parameter is provided, throw an error (you can adjust this to get all users if you like)
-		if usernameParam == "" {
+		if userIDParam == "" {
 			http.Error(w, "Please provide a valid username/password", http.StatusBadRequest)
 			return
 		}
-		user, err := h.netHandler.GetUserByUsername(usernameParam)
+
+		user, err := h.netHandler.GetUserByID(userID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -414,7 +420,8 @@ func (h *NetHandler) handleFiles(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		err = h.netHandler.UpdateFile(fileID, updatedFile.LearningGoalID, updatedFile.OwnerID, updatedFile.FileName, updatedFile.FileSize, updatedFile.FileType, updatedFile.FilePath)
+		err = h.netHandler.UpdateFile(fileID, updatedFile.LearningGoalID, updatedFile.OwnerID,
+			updatedFile.FileName, updatedFile.FileSize, updatedFile.FileType)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

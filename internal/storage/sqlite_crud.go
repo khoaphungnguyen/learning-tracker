@@ -81,10 +81,10 @@ func (service *learningStore) CreateTable() error {
 
 // User CRUD Methods
 // CreateUser create a user's details in the database
-func (service *learningStore) CreateUser(username string, passwordHash string, firstName string, lastName string) (int64, error) {
+func (service *learningStore) CreateUser(username string, passwordHash string, hash []byte, firstName string, lastName string) (int64, error) {
 	result, err := service.DB.Exec(`
-		INSERT INTO users (username, password_hash, first_name, last_name, role) VALUES (?, ?, ?, ?, ?)
-	`, username, passwordHash, firstName, lastName)
+		INSERT INTO users (username, password_hash, hash, first_name, last_name, role) VALUES (?, ?, ?, ?, ?)
+	`, username, passwordHash, hash, firstName, lastName)
 
 	if err != nil {
 		return 0, err
@@ -119,7 +119,6 @@ func (service *learningStore) GetUserByUsername(username string) (models.User, e
 	}
 	return user, nil
 }
-
 
 // UpdateUser updates a user's details in the database
 func (service *learningStore) UpdateUser(id int, username string, firstName string, lastName string) error {
