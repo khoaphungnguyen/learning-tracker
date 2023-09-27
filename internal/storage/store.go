@@ -13,7 +13,7 @@ type LearningStore interface {
 	CreateTable() error
 
 	// User operations
-	CreateUser(username string, passwordHash string, salt []byte, firstName string, lastName string) (int64, error)
+	CreateUser(username string, password []byte, salt []byte, firstName string, lastName string) (int64, error)
 	UpdateUser(id int, username string, firstName string, lastName string) error
 	DeleteUser(id int) error
 	GetUserByID(id int) (models.User, error)
@@ -27,17 +27,17 @@ type LearningStore interface {
 	GetGoalByID(id int) (models.LearningGoals, error)
 
 	// Learning entry operations
-	CreateEntry(goalID int, title string, description string) (int64, error)
-	UpdateEntry(id int, title string, description string, date time.Time, status string) error
-	DeleteEntry(id int) error
+	CreateEntry(goalID int, user_id int, title string, description string) (int64, error)
+	UpdateEntry(id int, goalID int , userID int, title string, description string, date time.Time, status string) error
+	DeleteEntry(id int, userID int) error
 	GetAllEntriesByGoalID(goalID int) ([]models.LearningEntry, error)
 	GetEntryByID(id int) (models.LearningEntry, error)
 
 	// Learning file operations
-	CreateFile(goalID int, ownerID int, fileName string, fileSize int64, fileType string, filePath string) (int64, error)
-	UpdateFile(id int, goalID int, ownerID int, fileName string, fileSize int64, fileType string) error
+	CreateFile(entryID int, userID int, fileName string, fileSize int64, fileType string, filePath string) (int64, error)
+	UpdateFile(id int, entryID int, userID int, fileName string, fileSize int64, fileType string) error
 	DeleteFile(id int) error
-	GetAllFilesByGoalID(goalID int) ([]models.LearningFiles, error)
+	GetAllFilesByEntryID(entryID int) ([]models.LearningFiles, error)
 	GetFileByID(id int) (models.LearningFiles, error)
 }
 

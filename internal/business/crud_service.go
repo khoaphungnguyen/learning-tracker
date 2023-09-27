@@ -8,8 +8,8 @@ import (
 
 // User Operations
 
-func (s *LearningService) CreateUser(username string, passwordHash string, salt []byte, firstName string, lastName string) (int64, error) {
-	return s.learningStore.CreateUser(username, passwordHash, salt, firstName, lastName)
+func (s *LearningService) CreateUser(username string, password []byte, salt []byte, firstName string, lastName string) (int64, error) {
+	return s.learningStore.CreateUser(username, password, salt, firstName, lastName)
 }
 
 func (s *LearningService) UpdateUser(id int, username string, firstName string, lastName string) error {
@@ -59,34 +59,34 @@ func (s *LearningService) GetEntryByID(id int) (models.LearningEntry, error) {
 	return s.learningStore.GetEntryByID(id)
 }
 
-func (s *LearningService) CreateEntry(goalID int, title string, description string) (int64, error) {
-	return s.learningStore.CreateEntry(goalID, title, description)
+func (s *LearningService) CreateEntry(goalID int, userID int, title string, description string) (int64, error) {
+	return s.learningStore.CreateEntry(goalID, userID, title, description)
 }
 
-func (s *LearningService) UpdateEntry(id int, title string, description string, date time.Time, status string) error {
-	return s.learningStore.UpdateEntry(id, title, description, date, status)
+func (s *LearningService) UpdateEntry(id int, goalID int, userID int, title string, description string, date time.Time, status string) error {
+	return s.learningStore.UpdateEntry(id, goalID, userID, title, description, date, status)
 }
 
-func (s *LearningService) DeleteEntry(id int) error {
-	return s.learningStore.DeleteEntry(id)
+func (s *LearningService) DeleteEntry(id int, userID int) error {
+	return s.learningStore.DeleteEntry(id, userID)
 }
 
 // Learning File Operations
 
-func (s *LearningService) GetAllFilesByGoalID(goalID int) ([]models.LearningFiles, error) {
-	return s.learningStore.GetAllFilesByGoalID(goalID)
+func (s *LearningService) GetAllFilesByEntryID(entryID int) ([]models.LearningFiles, error) {
+	return s.learningStore.GetAllFilesByEntryID(entryID)
 }
 
 func (s *LearningService) GetFileByID(id int) (models.LearningFiles, error) {
 	return s.learningStore.GetFileByID(id)
 }
 
-func (s *LearningService) CreateFile(goalID int, ownerID int, fileName string, fileSize int64, fileType string, filePath string) (int64, error) {
-	return s.learningStore.CreateFile(goalID, ownerID, fileName, fileSize, fileType, filePath)
+func (s *LearningService) CreateFile(entryID int, userID int, fileName string, fileSize int64, fileType string, filePath string) (int64, error) {
+	return s.learningStore.CreateFile(entryID, userID, fileName, fileSize, fileType, filePath)
 }
 
-func (s *LearningService) UpdateFile(id int, goalID int, ownerID int, fileName string, fileSize int64, fileType string) error {
-	return s.learningStore.UpdateFile(id, goalID, ownerID, fileName, fileSize, fileType)
+func (s *LearningService) UpdateFile(id int, entryID int, userID int, fileName string, fileSize int64, fileType string) error {
+	return s.learningStore.UpdateFile(id, entryID, userID, fileName, fileSize, fileType)
 }
 
 func (s *LearningService) DeleteFile(id int) error {
