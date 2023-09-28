@@ -1,15 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"net/http"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/khoaphungnguyen/learning-tracker/internal/business"
-	"github.com/khoaphungnguyen/learning-tracker/internal/storage"
-	"github.com/khoaphungnguyen/learning-tracker/internal/transport"
+	middleware "github.com/khoaphungnguyen/learning-tracker/internal/middlewares"
+	userbusiness "github.com/khoaphungnguyen/learning-tracker/internal/users/business"
+	userstorage "github.com/khoaphungnguyen/learning-tracker/internal/users/storage"
+	usertransport "github.com/khoaphungnguyen/learning-tracker/internal/users/transport"
 )
 
 func main() {
@@ -25,38 +25,42 @@ func main() {
 		log.Fatal("JWT_SECRET_KEY not set in .env file")
 	}
 
-	// Create a new storage instance
-	db, err := storage.NewLearningStore()
+	// Create a new user storage instance
+	db, err := userstorage.NewUserStore()
 	if err != nil {
 		panic(err)
 	}
 	defer db.DB.Close()
+
 	// Create the tables if they don't exist
 	err = db.CreateTable()
 	if err != nil {
 		panic(err)
 	}
-	// Create a new learning service
-	learningService := business.NewLearningService(db)
+	// Create a new user service
+	userService := userbusiness.NewUserService(db)
+	userHandler := usertransport.NewUserHandler(userService, jwtKey)
 
-	// Create a new transport hanlder
-	learningHandler := transport.NewNetHandler(learningService, jwtKey)
+	r := setupRouter(userHandler)
+	r.Run(":8000")
+}
 
-	// Initialzie the router
-	router := http.NewServeMux()
-
-	// Define API routes using handlers from the "api" package
-	learningHandler.SetupRoutes(router)
-
-	// Start the HTTP server
-	port := ":8000"
-	server := &http.Server{
-		Addr:    port,
-		Handler: router,
+func setupRouter(userHandler *usertransport.UserHandler) *gin.Engine {
+	r := gin.Default()
+	// Create a new group for the API
+	auth := r.Group("/auth")
+	{
+		// Add the login route
+		auth.POST(("/login"), userHandler.Login)
+		// Add the signup route
+		auth.POST("/signup", userHandler.Signup)
 	}
-	fmt.Printf("Server listening on port %s\n", port)
-	err = server.ListenAndServe()
-	if err != nil {
-		panic(err)
+
+	// Create protected route
+	protected := r.Group("/protected").Use(middleware.AuthMiddleware(userHandler.JWTKey))
+	{
+		protected.GET("/profile", userHandler.Profile)
 	}
+	// Return the router
+	return r
 }

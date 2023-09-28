@@ -2,20 +2,6 @@ package models
 
 import "time"
 
-type User struct {
-	ID            int             `json:"id"`
-	Username      string          `json:"username"`
-	Password      string          `json:"-"`
-	Salt          []byte          `json:"salt"`
-	FirstName     string          `json:"firstName"`
-	LastName      string          `json:"lastName"`
-	Role          string          `json:"role"`
-	CreatedAt     time.Time       `json:"createdAt"`
-	UpdatedAt     time.Time       `json:"updatedAt"`
-	OwnedFiles    []LearningFiles `json:"ownedFiles"`
-	LearningGoals []LearningGoals `json:"learningGoals"`
-}
-
 type LearningGoals struct {
 	ID        int             `json:"id"`
 	UserID    int             `json:"userId"`

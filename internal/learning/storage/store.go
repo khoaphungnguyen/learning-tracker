@@ -9,16 +9,7 @@ import (
 )
 
 type LearningStore interface {
-	// Table operations
-	CreateTable() error
-
-	// User operations
-	CreateUser(username string, password []byte, salt []byte, firstName string, lastName string) (int64, error)
-	UpdateUser(id int, username string, firstName string, lastName string) error
-	DeleteUser(id int) error
-	GetUserByID(id int) (models.User, error)
-	GetUserByUsername(username string) (models.User, error)
-
+	
 	// Learning goal operations
 	CreateGoal(userID int, title string, startDate time.Time, endDate time.Time) (int64, error)
 	UpdateGoal(id int, userID int, title string, startDate time.Time, endDate time.Time) error

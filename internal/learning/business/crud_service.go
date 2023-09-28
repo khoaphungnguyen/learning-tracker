@@ -6,27 +6,6 @@ import (
 	"github.com/khoaphungnguyen/learning-tracker/internal/models"
 )
 
-// User Operations
-
-func (s *LearningService) CreateUser(username string, password []byte, salt []byte, firstName string, lastName string) (int64, error) {
-	return s.learningStore.CreateUser(username, password, salt, firstName, lastName)
-}
-
-func (s *LearningService) UpdateUser(id int, username string, firstName string, lastName string) error {
-	return s.learningStore.UpdateUser(id, username, firstName, lastName)
-}
-
-func (s *LearningService) DeleteUser(id int) error {
-	return s.learningStore.DeleteUser(id)
-}
-
-func (s *LearningService) GetUserByID(id int) (models.User, error) {
-	return s.learningStore.GetUserByID(id)
-}
-
-func (s *LearningService) GetUserByUsername(username string) (models.User, error) {
-	return s.learningStore.GetUserByUsername(username)
-}
 
 // Learning Goal Operations
 func (s *LearningService) GetGoalByID(id int) (models.LearningGoals, error) {

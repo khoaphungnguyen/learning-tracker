@@ -18,10 +18,11 @@ type CustomClaims struct {
 func (h *NetHandler) SetupRoutes(router *http.ServeMux) {
 	// Routes for user operations
 	router.HandleFunc("/users", h.authMiddleware(h.handleUsers))
-	router.HandleFunc("/users/add", h.handleAddUsers)
 
 	// Routes for auth operation
-	router.HandleFunc("/auth/signin", h.handleSignIn)
+	router.HandleFunc("/auth/signin", h.Signin)
+	router.HandleFunc("/auth/signup", h.Signup)
+
 
 	// Routes for goals operations
 	router.HandleFunc("/goals", h.authMiddleware(h.handleGoals))
@@ -64,9 +65,7 @@ func (h *NetHandler) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		userID := claims.Audience
-
 		ctx := context.WithValue(r.Context(), "userID", userID)
-
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
