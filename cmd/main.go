@@ -92,6 +92,8 @@ func setupRouter(userHandler *usertransport.UserHandler, learningHandler *learni
 		protected.GET("/goals", learningHandler.GetAllGoalsByUserID)
 		// Get a goal by ID
 		protected.GET("/goals/:id", learningHandler.GetGoalByID)
+		// Get all entries with the given goal ID
+		protected.GET("/goals/:id/entries", learningHandler.GetAllEntriesByGoalID)
 
 		// Create a new entry
 		protected.POST("/entries", learningHandler.CreateEntry)
@@ -99,19 +101,17 @@ func setupRouter(userHandler *usertransport.UserHandler, learningHandler *learni
 		protected.PUT("/entries", learningHandler.UpdateEntry)
 		// Delete an entry
 		protected.DELETE("/entries/:id", learningHandler.DeleteEntry)
-		// Get all entries
-		protected.GET("/entries", learningHandler.GetAllEntriesByGoalID)
 		// Get an entry by ID
 		protected.GET("/entries/:id", learningHandler.GetEntryByID)
+		// Get all files by entry ID
+		protected.GET("/entries/:id/files", learningHandler.GetAllFilesByEntryID)
 
-		// Create a new file
+		// Create a new file with the given entry ID
 		protected.POST("/files", learningHandler.CreateFile)
 		// Update a file
 		protected.PUT("/files", learningHandler.UpdateFile)
 		// Delete a file
-		protected.DELETE("/files", learningHandler.DeleteFile)
-		// Get all files
-		protected.GET("/files", learningHandler.GetAllFilesByEntryID)
+		protected.DELETE("/files/:id", learningHandler.DeleteFile)
 		// Get a file by ID
 		protected.GET("/files/:id", learningHandler.GetFileByID)
 		// Download a file

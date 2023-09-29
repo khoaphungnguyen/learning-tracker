@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	learningmodel "github.com/khoaphungnguyen/learning-tracker/internal/learning/model"
@@ -45,6 +46,15 @@ func (h *LearningHandler) UpdateGoal(c *gin.Context) {
 		})
 		return
 	}
+	// Check if the goal ID is valid
+	_, err = h.learningHandler.GetGoalByID(goal.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
 	err = h.learningHandler.UpdateGoal(goal.ID, userID, goal.Title, goal.StartDate, goal.EndDate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -67,6 +77,14 @@ func (h *LearningHandler) DeleteGoal(c *gin.Context) {
 		})
 		return
 	}
+	// Check if the goal ID is valid
+	_, err = h.learningHandler.GetGoalByID(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 	err = h.learningHandler.DeleteGoal(goalID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -78,7 +96,7 @@ func (h *LearningHandler) DeleteGoal(c *gin.Context) {
 	})
 }
 
-// Handle get all goals from gin
+// Handle get all goals
 func (h *LearningHandler) GetAllGoalsByUserID(c *gin.Context) {
 	userID := c.GetInt("id")
 	goals, err := h.learningHandler.GetAllGoalsByUserID(userID)
@@ -90,7 +108,7 @@ func (h *LearningHandler) GetAllGoalsByUserID(c *gin.Context) {
 	c.JSON(http.StatusOK, goals)
 }
 
-// Handle get goal by ID from gin
+// Handle get goal by ID
 func (h *LearningHandler) GetGoalByID(c *gin.Context) {
 	userID := c.GetInt("id")
 	goal, err := h.learningHandler.GetGoalByID(userID)
@@ -127,21 +145,29 @@ func (h *LearningHandler) CreateEntry(c *gin.Context) {
 // Handle update entry
 func (h *LearningHandler) UpdateEntry(c *gin.Context) {
 	userID := c.GetInt("id")
-	var updatedEntry learningmodel.LearningEntry
-	err := c.BindJSON(&updatedEntry)
+	var entry learningmodel.LearningEntry
+	err := c.BindJSON(&entry)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
 	}
-	err = h.learningHandler.UpdateEntry(updatedEntry.ID, userID, updatedEntry.Title, updatedEntry.Description, updatedEntry.Status)
+	// Check if the entry ID is valid
+	_, err = h.learningHandler.GetEntryByID(entry.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	err = h.learningHandler.UpdateEntry(entry.ID, userID, entry.Title, entry.Description, entry.Status)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"message": fmt.Sprintf("Entry#%d is updated successfully", updatedEntry.ID),
+		"message": fmt.Sprintf("Entry#%d is updated successfully", entry.ID),
 	})
 }
 
@@ -154,6 +180,15 @@ func (h *LearningHandler) DeleteEntry(c *gin.Context) {
 		})
 		return
 	}
+	// Check if the entry ID is valid
+	_, err = h.learningHandler.GetEntryByID(entryID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
 	err = h.learningHandler.DeleteEntry(entryID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -199,56 +234,85 @@ func (h *LearningHandler) GetEntryByID(c *gin.Context) {
 	c.JSON(http.StatusOK, entry)
 }
 
-// Handle new file upload and create file
+// Handle new file upload and support multiple files upload
 func (h *LearningHandler) CreateFile(c *gin.Context) {
 	userID := c.GetInt("id")
-	entryID, err := strconv.Atoi(c.Param("id"))
+	entryID, err := strconv.Atoi(c.PostForm("entryID"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid entry ID",
 		})
 		return
 	}
-	file, err := c.FormFile("file")
+	goalID, err := strconv.Atoi(c.PostForm("goalID"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": "Invalid goal ID",
 		})
 		return
 	}
 
-	fileName := file.Filename
-	fileSize := file.Size
-	fileType := file.Header.Get("Content-Type")
-	filePath := fmt.Sprintf("uploads/%d/%s", userID, fileName)
-	err = c.SaveUploadedFile(file, filePath)
+	// Support multiple files upload
+	form, err := c.MultipartForm()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
-		return
 	}
-	newID, err := h.learningHandler.CreateFile(entryID, userID, fileName, fileSize, fileType, filePath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+	files := form.File["files"]
+	for _, file := range files {
+		// Create current time to append to the file name
+		fileName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), file.Filename)
+		fileSize := file.Size
+		fileType := file.Header.Get("Content-Type")
+		filePath := fmt.Sprintf("uploads/%d/%d/%d/%s", userID, goalID, entryID, fileName)
+		// Limit file size to 25MB
+		if fileSize > 25<<20 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "File size must be less than 25MB",
+			})
+			return
+		}
+		_, err = h.learningHandler.CreateFile(entryID, userID, fileName, fileSize, fileType, filePath)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+		}
+		// Save the file
+		err = c.SaveUploadedFile(file, filePath)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+		}
 	}
 	c.JSON(http.StatusCreated, gin.H{
-		"message": fmt.Sprintf("New file#%d is created successfully", newID),
+		"message": "files are uploaded successfully",
 	})
+
 }
 
 // Handle update file and replace the old file
 func (h *LearningHandler) UpdateFile(c *gin.Context) {
 	userID := c.GetInt("id")
-	fileID, err := strconv.Atoi(c.Param("id"))
+	fileID, err := strconv.Atoi(c.PostForm("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid file ID",
 		})
 		return
 	}
+	oldFile, err := h.learningHandler.GetFileByID(fileID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+	}
+	// Extract goalID and entryID from the old file
+	goalID := oldFile.FilePath[10:11]
+	entryID := oldFile.FilePath[12:13]
+
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -257,17 +321,34 @@ func (h *LearningHandler) UpdateFile(c *gin.Context) {
 		return
 	}
 
-	fileName := file.Filename
+	// Create current time to append to the file name
+	fileName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), file.Filename)
 	fileSize := file.Size
 	fileType := file.Header.Get("Content-Type")
-	filePath := fmt.Sprintf("uploads/%d/%s", userID, fileName)
-	err = c.SaveUploadedFile(file, filePath)
+	filePath := fmt.Sprintf("uploads/%d/%s/%s/%s", userID, goalID, entryID, fileName)
+	// Limit file size to 25MB
+	if fileSize > 25<<20 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "File size must be less than 25MB",
+		})
+		return
+	}
+	// Delete the old file
+	err = os.Remove(oldFile.FilePath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 	}
+	// Update the file
 	err = h.learningHandler.UpdateFile(fileID, userID, fileName, fileSize, fileType, filePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+	}
+	// Save the new file
+	err = c.SaveUploadedFile(file, filePath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
