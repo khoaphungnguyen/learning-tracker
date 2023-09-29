@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -14,19 +15,12 @@ type JwtWrapper struct {
 	ExpirationHours   int64  // Expiration time of the JWT token in hours
 }
 
-type JwtClaim struct {
-	Email string
-	jwt.StandardClaims
-}
-
 // GenerateToken generates a jwt token
-func (j *JwtWrapper) GenerateToken(email string) (signedToken string, err error) {
-	claims := &JwtClaim{
-		Email: email,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(j.ExpirationMinutes)).Unix(),
-			Issuer:    j.Issuer,
-		},
+func (j *JwtWrapper) GenerateToken(id int) (signedToken string, err error) {
+	claims := &jwt.StandardClaims{
+		Audience:  strconv.Itoa(id),
+		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(j.ExpirationMinutes)).Unix(),
+		Issuer:    j.Issuer,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err = token.SignedString([]byte(j.SecretKey))
@@ -37,13 +31,11 @@ func (j *JwtWrapper) GenerateToken(email string) (signedToken string, err error)
 }
 
 // RefreshToken generates a refresh jwt token
-func (j *JwtWrapper) RefreshToken(email string) (signedtoken string, err error) {
-	claims := &JwtClaim{
-		Email: email,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(j.ExpirationHours)).Unix(),
-			Issuer:    j.Issuer,
-		},
+func (j *JwtWrapper) RefreshToken(id int) (signedtoken string, err error) {
+	claims := &jwt.StandardClaims{
+		Audience:  strconv.Itoa(id),
+		ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(j.ExpirationHours)).Unix(),
+		Issuer:    j.Issuer,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedtoken, err = token.SignedString([]byte(j.SecretKey))
@@ -54,10 +46,10 @@ func (j *JwtWrapper) RefreshToken(email string) (signedtoken string, err error) 
 }
 
 // ValidateToken validates the jwt token
-func (j *JwtWrapper) ValidateToken(signedToken string) (claims *JwtClaim, err error) {
+func (j *JwtWrapper) ValidateToken(signedToken string) (claims *jwt.StandardClaims, err error) {
 	token, err := jwt.ParseWithClaims(
 		signedToken,
-		&JwtClaim{},
+		&jwt.StandardClaims{},
 		func(token *jwt.Token) (interface{}, error) {
 			return []byte(j.SecretKey), nil
 		},
@@ -65,7 +57,7 @@ func (j *JwtWrapper) ValidateToken(signedToken string) (claims *JwtClaim, err er
 	if err != nil {
 		return
 	}
-	claims, ok := token.Claims.(*JwtClaim)
+	claims, ok := token.Claims.(*jwt.StandardClaims)
 	if !ok {
 		err = errors.New("could not parse claims")
 		return

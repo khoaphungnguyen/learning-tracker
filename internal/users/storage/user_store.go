@@ -10,7 +10,7 @@ func (s *userStore) CreateTable() error {
 			email TEXT UNIQUE,
 			password string,
 			salt BLOB,  
-			full_name TEXT,
+			name TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			role TEXT DEFAULT 'user'
@@ -77,10 +77,10 @@ func (s *userStore) CreateTable() error {
 
 // User CRUD Methods
 // CreateUser create a user's details in the database
-func (s *userStore) CreateUser(email string, password string, salt []byte, fullname string) error {
+func (s *userStore) CreateUser(email string, password string, salt []byte, name string) error {
 	_, err := s.DB.Exec(`
-		INSERT INTO users (email, password, salt, full_name) VALUES (?, ?, ?, ?)
-	`, email, password, salt, fullname)
+		INSERT INTO users (email, password, salt, name) VALUES (?, ?, ?, ?)
+	`, email, password, salt, name)
 
 	if err != nil {
 		return err
@@ -88,12 +88,12 @@ func (s *userStore) CreateUser(email string, password string, salt []byte, fulln
 	return nil
 }
 
-// GetUserByID return a user's details in the database
-func (s *userStore) GetProfileByEmail(email string) (usermodel.User, error) {
+// GetUser return a user's details in the database
+func (s *userStore) GetUser(id int) (usermodel.User, error) {
 	var user usermodel.User
 	err := s.DB.QueryRow(`
-		SELECT id, email, full_name, created_at, updated_at, role FROM users WHERE email=?
-	`, email).Scan(&user.ID, &user.Email, &user.Fullname, &user.CreatedAt, &user.UpdatedAt, &user.Role)
+		SELECT id, email, name, created_at, updated_at, role FROM users WHERE id=?
+	`, id).Scan(&user.ID, &user.Email, &user.Name, &user.CreatedAt, &user.UpdatedAt, &user.Role)
 
 	if err != nil {
 		return user, err
@@ -105,8 +105,8 @@ func (s *userStore) GetProfileByEmail(email string) (usermodel.User, error) {
 func (s *userStore) GetUserByEmail(email string) (usermodel.User, error) {
 	var user usermodel.User
 	err := s.DB.QueryRow(`
-		SELECT email, password, salt FROM users WHERE email=?
-	`, email).Scan(&user.Email, &user.Password, &user.Salt)
+		SELECT id, password, salt FROM users WHERE email=?
+	`, email).Scan(&user.ID, &user.Password, &user.Salt)
 	if err != nil {
 		return user, err
 	}
@@ -114,10 +114,10 @@ func (s *userStore) GetUserByEmail(email string) (usermodel.User, error) {
 }
 
 // UpdateUser updates a user's details in the database
-func (s *userStore) UpdateUser(email string, password string, fullname string) error {
+func (s *userStore) UpdateUser(id int, email string, name string) error {
 	_, err := s.DB.Exec(`
-		UPDATE users SET password=? full_name=?, updated_at=CURRENT_TIMESTAMP WHERE email=?
-	`, password, fullname, email)
+		UPDATE users SET email=?, name=?, updated_at=current_timestamp  WHERE id=?
+	`, email, name, id)
 
 	if err != nil {
 		return err
@@ -126,11 +126,10 @@ func (s *userStore) UpdateUser(email string, password string, fullname string) e
 }
 
 // DeleteUser deletes a user by ID from the database
-func (s *userStore) DeleteUser(id int, email string) error {
+func (s *userStore) DeleteUser(id int) error {
 	_, err := s.DB.Exec(`
-		DELETE FROM users WHERE id=? and email=?
-	`, id, email)
-
+		DELETE FROM users WHERE id=?;
+	`, id)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +11,7 @@ import (
 // AuthMiddleware is a middleware that validates token and authorizes users
 func AuthMiddleware(secretKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-	
+
 		// Get the Authorization header from the request
 		clientToken := c.Request.Header.Get("Authorization")
 		if clientToken == "" {
@@ -44,8 +45,15 @@ func AuthMiddleware(secretKey string) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		// Convert id to int
+		id, err := strconv.Atoi(claims.Audience)
+		if err != nil {
+			c.JSON(401, err.Error())
+			c.Abort()
+			return
+		}
 		// Set the claims in the context
-		c.Set("email", claims.Email)
+		c.Set("id", id)
 		c.Next()
 	}
 }

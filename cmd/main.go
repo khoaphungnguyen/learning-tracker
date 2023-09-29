@@ -6,6 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	learningbusiness "github.com/khoaphungnguyen/learning-tracker/internal/learning/business"
+	learningstorage "github.com/khoaphungnguyen/learning-tracker/internal/learning/storage"
+	learningtransport "github.com/khoaphungnguyen/learning-tracker/internal/learning/transport"
 	middleware "github.com/khoaphungnguyen/learning-tracker/internal/middlewares"
 	userbusiness "github.com/khoaphungnguyen/learning-tracker/internal/users/business"
 	userstorage "github.com/khoaphungnguyen/learning-tracker/internal/users/storage"
@@ -26,26 +29,37 @@ func main() {
 	}
 
 	// Create a new user storage instance
-	db, err := userstorage.NewUserStore()
+	userDB, err := userstorage.NewUserStore()
 	if err != nil {
 		panic(err)
 	}
-	defer db.DB.Close()
+	defer userDB.DB.Close()
+
+	// Create a new learning storage instance
+	learningDB, err := learningstorage.NewLearningStore()
+	if err != nil {
+		panic(err)
+	}
+	defer learningDB.DB.Close()
 
 	// Create the tables if they don't exist
-	err = db.CreateTable()
+	err = userDB.CreateTable()
 	if err != nil {
 		panic(err)
 	}
 	// Create a new user service
-	userService := userbusiness.NewUserService(db)
+	userService := userbusiness.NewUserService(userDB)
 	userHandler := usertransport.NewUserHandler(userService, jwtKey)
 
-	r := setupRouter(userHandler)
+	// Create a new learning service
+	learningService := learningbusiness.NewLearningService(learningDB)
+	learningHandler := learningtransport.NewLearningHandler(learningService)
+
+	r := setupRouter(userHandler, learningHandler)
 	r.Run(":8000")
 }
 
-func setupRouter(userHandler *usertransport.UserHandler) *gin.Engine {
+func setupRouter(userHandler *usertransport.UserHandler, learningHandler *learningtransport.LearningHandler) *gin.Engine {
 	r := gin.Default()
 	// Create a new group for the API
 	auth := r.Group("/auth")
@@ -54,13 +68,56 @@ func setupRouter(userHandler *usertransport.UserHandler) *gin.Engine {
 		auth.POST(("/login"), userHandler.Login)
 		// Add the signup route
 		auth.POST("/signup", userHandler.Signup)
+		// Add the refresh token route
+		auth.POST("/refresh", userHandler.RenewAccessToken)
 	}
 
 	// Create protected route
 	protected := r.Group("/protected").Use(middleware.AuthMiddleware(userHandler.JWTKey))
 	{
+		// Get user profile
 		protected.GET("/profile", userHandler.Profile)
+		// Update user profile
+		protected.PUT("/profile", userHandler.UpdateProfile)
+		// Delete user profile
+		protected.DELETE("/profile", userHandler.DeleteProfile)
+
+		// Create a new goal
+		protected.POST("/goals", learningHandler.CreateGoal)
+		// Update a goal
+		protected.PUT("/goals", learningHandler.UpdateGoal)
+		// Delete a goal
+		protected.DELETE("/goals/:id", learningHandler.DeleteGoal)
+		// Get all goals
+		protected.GET("/goals", learningHandler.GetAllGoalsByUserID)
+		// Get a goal by ID
+		protected.GET("/goals/:id", learningHandler.GetGoalByID)
+
+		// Create a new entry
+		protected.POST("/entries", learningHandler.CreateEntry)
+		// Update an entry
+		protected.PUT("/entries", learningHandler.UpdateEntry)
+		// Delete an entry
+		protected.DELETE("/entries/:id", learningHandler.DeleteEntry)
+		// Get all entries
+		protected.GET("/entries", learningHandler.GetAllEntriesByGoalID)
+		// Get an entry by ID
+		protected.GET("/entries/:id", learningHandler.GetEntryByID)
+
+		// Create a new file
+		protected.POST("/files", learningHandler.CreateFile)
+		// Update a file
+		protected.PUT("/files", learningHandler.UpdateFile)
+		// Delete a file
+		protected.DELETE("/files", learningHandler.DeleteFile)
+		// Get all files
+		protected.GET("/files", learningHandler.GetAllFilesByEntryID)
+		// Get a file by ID
+		protected.GET("/files/:id", learningHandler.GetFileByID)
+		// Download a file
+		protected.GET("/files/:id/download", learningHandler.DownloadFile)
+
 	}
-	// Return the router
+
 	return r
 }

@@ -1,13 +1,11 @@
-package business
+package learningbusiness
 
-import (
-	"github.com/khoaphungnguyen/learning-tracker/internal/storage"
-)
+import learningstorage "github.com/khoaphungnguyen/learning-tracker/internal/learning/storage"
 
 type LearningService struct {
-	learningStore storage.LearningStore
+	learningStore learningstorage.LearningStore
 }
 
-func NewLearningService(learningStore storage.LearningStore) *LearningService {
+func NewLearningService(learningStore learningstorage.LearningStore) *LearningService {
 	return &LearningService{learningStore: learningStore}
 }

@@ -5,20 +5,21 @@ import (
 	"errors"
 	"time"
 
+	learningmodels "github.com/khoaphungnguyen/learning-tracker/internal/learning/model"
 	"golang.org/x/crypto/argon2"
 )
 
 type User struct {
-	ID        int       `json:"id"`
-	Email     string    `json:"email"`
-	Password  string    `json:"password" binding:"required"`
-	Salt      []byte    `json:"salt"`
-	Fullname  string    `json:"fullName"`
-	Role      string    `json:"role"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	// OwnedFiles    []LearningFiles `json:"ownedFiles"`
-	// LearningGoals []LearningGoals `json:"learningGoals"`
+	ID            int                            `json:"id"`
+	Email         string                         `json:"email" `
+	Password      string                         `json:"password" `
+	Salt          []byte                         `json:"salt"`
+	Name          string                         `json:"name"`
+	Role          string                         `json:"role"`
+	CreatedAt     time.Time                      `json:"createdAt"`
+	UpdatedAt     time.Time                      `json:"updatedAt"`
+	OwnedFiles    []learningmodels.LearningFiles `json:"ownedFiles"`
+	LearningGoals []learningmodels.LearningGoals `json:"learningGoals"`
 }
 
 // HashPassword takes a string as a parameter and encrypts it using argon2

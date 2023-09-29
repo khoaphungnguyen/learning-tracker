@@ -1,4 +1,4 @@
-package models
+package learningmodel
 
 import "time"
 
@@ -18,7 +18,7 @@ type LearningEntry struct {
 	Title       string          `json:"title"`
 	Description string          `json:"description"`
 	Date        time.Time       `json:"date"`
-	Status      string          `json:"completed"`
+	Status      string          `json:"status"`
 	Files       []LearningFiles `json:"files"`
 }
 

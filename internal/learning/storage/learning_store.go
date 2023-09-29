@@ -1,13 +1,11 @@
-package storage
+package learningstorage
 
 import (
 	"time"
 
-	"github.com/khoaphungnguyen/learning-tracker/internal/models"
+	learningmodel "github.com/khoaphungnguyen/learning-tracker/internal/learning/model"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
-
-
 
 // CreateGoal inserts a new learning goal into the database and returns its ID.
 func (service *learningStore) CreateGoal(userID int, title string, startDate time.Time, endDate time.Time) (int64, error) {
@@ -24,8 +22,8 @@ func (service *learningStore) CreateGoal(userID int, title string, startDate tim
 // UpdateGoal updates an existing learning goal.
 func (service *learningStore) UpdateGoal(id int, userID int, title string, startDate time.Time, endDate time.Time) error {
 	_, err := service.DB.Exec(`
-		UPDATE learning_goals SET user_id=?, title=?, startdate=?, enddate=? WHERE id=?
-	`, userID, title, startDate, endDate, id)
+		UPDATE learning_goals SET title=?, startdate=?, enddate=? WHERE user_id=? and id=?
+	`, title, startDate, endDate, userID, id)
 	if err != nil {
 		return err
 	}
@@ -33,10 +31,10 @@ func (service *learningStore) UpdateGoal(id int, userID int, title string, start
 }
 
 // DeleteGoal deletes a learning goal by ID.
-func (service *learningStore) DeleteGoal(id int) error {
+func (service *learningStore) DeleteGoal(id int, userID int) error {
 	_, err := service.DB.Exec(`
-		DELETE FROM learning_goals WHERE id=?
-	`, id)
+		DELETE FROM learning_goals WHERE id=? and user_id=?
+	`, id, userID)
 	if err != nil {
 		return err
 	}
@@ -44,10 +42,10 @@ func (service *learningStore) DeleteGoal(id int) error {
 }
 
 // GetAllGoalsByUserID returns all learning goals for a given user ID.
-func (service *learningStore) GetAllGoalsByUserID(userID int) ([]models.LearningGoals, error) {
-	var goals []models.LearningGoals
+func (service *learningStore) GetAllGoalsByUserID(userID int) ([]learningmodel.LearningGoals, error) {
+	var goals []learningmodel.LearningGoals
 	rows, err := service.DB.Query(`
-		SELECT id, user_id, title, startdate, enddate FROM learning_goals WHERE user_id=?
+		SELECT id, title, startdate, enddate FROM learning_goals WHERE user_id=?
 	`, userID)
 	if err != nil {
 		return goals, err
@@ -55,8 +53,8 @@ func (service *learningStore) GetAllGoalsByUserID(userID int) ([]models.Learning
 	defer rows.Close()
 
 	for rows.Next() {
-		var goal models.LearningGoals
-		err = rows.Scan(&goal.ID, &goal.UserID, &goal.Title, &goal.StartDate, &goal.EndDate)
+		var goal learningmodel.LearningGoals
+		err = rows.Scan(&goal.ID, &goal.Title, &goal.StartDate, &goal.EndDate)
 		if err != nil {
 			return goals, err
 		}
@@ -66,11 +64,11 @@ func (service *learningStore) GetAllGoalsByUserID(userID int) ([]models.Learning
 }
 
 // GetGoalByID returns a learning goal by ID.
-func (service *learningStore) GetGoalByID(id int) (models.LearningGoals, error) {
-	var goal models.LearningGoals
+func (service *learningStore) GetGoalByID(id int) (learningmodel.LearningGoals, error) {
+	var goal learningmodel.LearningGoals
 	err := service.DB.QueryRow(`
-		SELECT id, user_id, title, startdate, enddate FROM learning_goals WHERE id=?
-	`, id).Scan(&goal.ID, &goal.UserID, &goal.Title, &goal.StartDate, &goal.EndDate)
+		SELECT id, title, startdate, enddate FROM learning_goals WHERE id=?
+	`, id).Scan(&goal.ID, &goal.Title, &goal.StartDate, &goal.EndDate)
 	if err != nil {
 		return goal, err
 	}
@@ -90,10 +88,10 @@ func (service *learningStore) CreateEntry(goalID int, userID int, title string, 
 }
 
 // UpdateEntry updates an existing learning entry.
-func (service *learningStore) UpdateEntry(id int, goal_id int, user_id int, title string, description string, date time.Time, status string) error {
+func (service *learningStore) UpdateEntry(id int, user_id int, title string, description string, status string) error {
 	_, err := service.DB.Exec(`
-        UPDATE learning_entries SET title=?, description=?, date=?, status=? WHERE id=? and goal_id=? and user_id=?
-    `, title, description, date, status, id, goal_id, user_id)
+        UPDATE learning_entries SET title=?, description=?, date=current_timestamp, status=? WHERE id=? and user_id=?
+    `, title, description, status, id, user_id)
 	if err != nil {
 		return err
 	}
@@ -112,10 +110,10 @@ func (service *learningStore) DeleteEntry(id int, userID int) error {
 }
 
 // GetAllEntriesByGoalID returns all learning entries for a given goal ID.
-func (service *learningStore) GetAllEntriesByGoalID(goalID int) ([]models.LearningEntry, error) {
-	var entries []models.LearningEntry
+func (service *learningStore) GetAllEntriesByGoalID(goalID int) ([]learningmodel.LearningEntry, error) {
+	var entries []learningmodel.LearningEntry
 	rows, err := service.DB.Query(`
-        SELECT id, goal_id, user_id, title, description, date, status FROM learning_entries WHERE goal_id=?
+        SELECT id, title, description, date, status FROM learning_entries WHERE goal_id=?
     `, goalID)
 	if err != nil {
 		return entries, err
@@ -123,8 +121,8 @@ func (service *learningStore) GetAllEntriesByGoalID(goalID int) ([]models.Learni
 	defer rows.Close()
 
 	for rows.Next() {
-		var entry models.LearningEntry
-		err = rows.Scan(&entry.ID, &entry.GoalID, &entry.UserID, &entry.Title, &entry.Description, &entry.Date, &entry.Status)
+		var entry learningmodel.LearningEntry
+		err = rows.Scan(&entry.ID, &entry.Title, &entry.Description, &entry.Date, &entry.Status)
 		if err != nil {
 			return entries, err
 		}
@@ -134,11 +132,11 @@ func (service *learningStore) GetAllEntriesByGoalID(goalID int) ([]models.Learni
 }
 
 // GetEntryByID returns a learning entry by ID.
-func (service *learningStore) GetEntryByID(id int) (models.LearningEntry, error) {
-	var entry models.LearningEntry
+func (service *learningStore) GetEntryByID(id int) (learningmodel.LearningEntry, error) {
+	var entry learningmodel.LearningEntry
 	err := service.DB.QueryRow(`
-        SELECT id, goal_id, user_id, title, description, date, status FROM learning_entries WHERE id=?
-    `, id).Scan(&entry.ID, &entry.GoalID, &entry.UserID, &entry.Title, &entry.Description, &entry.Date, &entry.Status)
+        SELECT id, title, description, date, status FROM learning_entries WHERE id=?
+    `, id).Scan(&entry.ID, &entry.Title, &entry.Description, &entry.Date, &entry.Status)
 	if err != nil {
 		return entry, err
 	}
@@ -158,10 +156,10 @@ func (service *learningStore) CreateFile(entryID int, userID int, fileName strin
 }
 
 // UpdateFile updates an existing learning file.
-func (service *learningStore) UpdateFile(id int, entryID int, userID int, fileName string, fileSize int64, fileType string) error {
+func (service *learningStore) UpdateFile(id int, userID int, fileName string, fileSize int64, fileType string, filePath string) error {
 	_, err := service.DB.Exec(`
-        UPDATE learning_files SET entry_id=?, user_id=?, filename=?, filesize=?, filetype=? WHERE id=?
-    `, entryID, userID, fileName, fileSize, fileType, id)
+        UPDATE learning_files SET filename=?, filesize=?, filetype=?, filePath=? WHERE id=? and user_id=?
+    `, fileName, fileSize, fileType, filePath, id, userID)
 	if err != nil {
 		return err
 	}
@@ -169,10 +167,10 @@ func (service *learningStore) UpdateFile(id int, entryID int, userID int, fileNa
 }
 
 // DeleteFile deletes a learning file by ID.
-func (service *learningStore) DeleteFile(id int) error {
+func (service *learningStore) DeleteFile(id int, userID int) error {
 	_, err := service.DB.Exec(`
-        DELETE FROM learning_files WHERE id=?
-    `, id)
+        DELETE FROM learning_files WHERE id=? and user_id=?
+    `, id, userID)
 	if err != nil {
 		return err
 	}
@@ -180,19 +178,19 @@ func (service *learningStore) DeleteFile(id int) error {
 }
 
 // GetAllFilesByGoalID returns all learning files for a given goal ID.
-func (service *learningStore) GetAllFilesByEntryID(goalID int) ([]models.LearningFiles, error) {
-	var files []models.LearningFiles
+func (service *learningStore) GetAllFilesByEntryID(entryID int) ([]learningmodel.LearningFiles, error) {
+	var files []learningmodel.LearningFiles
 	rows, err := service.DB.Query(`
-        SELECT id, entry_id, user_id, filename, filesize, filetype, filepath FROM learning_files WHERE entry_id=?
-    `, goalID)
+        SELECT id, filename, filesize, filetype, filepath FROM learning_files WHERE entry_id=?
+    `, entryID)
 	if err != nil {
 		return files, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var file models.LearningFiles
-		err = rows.Scan(&file.ID, &file.EntryID, &file.UserID, &file.FileName, &file.FileSize, &file.FileType, &file.FilePath)
+		var file learningmodel.LearningFiles
+		err = rows.Scan(&file.ID, &file.FileName, &file.FileSize, &file.FileType, &file.FilePath)
 		if err != nil {
 			return files, err
 		}
@@ -202,11 +200,11 @@ func (service *learningStore) GetAllFilesByEntryID(goalID int) ([]models.Learnin
 }
 
 // GetFileByID returns a learning file by ID.
-func (service *learningStore) GetFileByID(id int) (models.LearningFiles, error) {
-	var file models.LearningFiles
+func (service *learningStore) GetFileByID(id int) (learningmodel.LearningFiles, error) {
+	var file learningmodel.LearningFiles
 	err := service.DB.QueryRow(`
-        SELECT id, entry_id, user_id, filename, filesize, filetype, filepath FROM learning_files WHERE id=?
-    `, id).Scan(&file.ID, &file.EntryID, &file.UserID, &file.FileName, &file.FileSize, &file.FileType, &file.FilePath)
+        SELECT id, filename, filesize, filetype, filepath FROM learning_files WHERE id=?
+    `, id).Scan(&file.ID, &file.FileName, &file.FileSize, &file.FileType, &file.FilePath)
 	if err != nil {
 		return file, err
 	}

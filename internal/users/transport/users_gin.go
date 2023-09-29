@@ -2,6 +2,8 @@ package usertransport
 
 import (
 	"log"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/khoaphungnguyen/learning-tracker/internal/auth"
@@ -40,7 +42,7 @@ func (h *UserHandler) Signup(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	err = h.userHandler.CreateUser(user.Email, user.Password, user.Salt, user.Fullname)
+	err = h.userHandler.CreateUser(user.Email, user.Password, user.Salt, user.Name)
 	if err != nil {
 		log.Println(err)
 		c.JSON(500, gin.H{
@@ -86,10 +88,10 @@ func (h *UserHandler) Login(c *gin.Context) {
 	jwtWrapper := auth.JwtWrapper{
 		SecretKey:         h.JWTKey,
 		Issuer:            "AuthService",
-		ExpirationMinutes: 1,
+		ExpirationMinutes: 30,
 		ExpirationHours:   12,
 	}
-	signedToken, err := jwtWrapper.GenerateToken(user.Email)
+	signedToken, err := jwtWrapper.GenerateToken(user.ID)
 	if err != nil {
 		log.Println(err)
 		c.JSON(500, gin.H{
@@ -98,7 +100,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	signedRefreshToken, err := jwtWrapper.RefreshToken(user.Email)
+	signedRefreshToken, err := jwtWrapper.RefreshToken(user.ID)
 	if err != nil {
 		log.Println(err)
 		c.JSON(500, gin.H{
@@ -115,8 +117,8 @@ func (h *UserHandler) Login(c *gin.Context) {
 }
 
 func (h *UserHandler) Profile(c *gin.Context) {
-	email := c.GetString("email")
-	user, err := h.userHandler.GetProfileByEmail(email)
+	userID := c.GetInt("id")
+	user, err := h.userHandler.GetUser(userID)
 	if err != nil {
 		c.JSON(404, gin.H{
 			"Error": "User Not Found",
@@ -127,65 +129,102 @@ func (h *UserHandler) Profile(c *gin.Context) {
 	c.JSON(200, user)
 }
 
-
+// Handle Update User
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
-	
+	userID := c.GetInt("id")
+	var user usermodel.User
+	err := c.ShouldBindJSON(&user)
+	if err != nil {
+		log.Println(err)
+		c.JSON(400, gin.H{
+			"Error": "Invalid inputs",
+		})
+		c.Abort()
+		return
+	}
+	err = h.userHandler.UpdateUser(userID, user.Email, user.Name)
+	if err != nil {
+		log.Println(err)
+		c.JSON(500, gin.H{
+			"Error": "Error Updating User",
+		})
+		c.Abort()
+		return
+	}
+	c.JSON(200, gin.H{
+		"Message": "Successful Update",
+	})
 }
 
-// // checkAuthorization checks if the user is authorized to perform the operation
-// func checkAuthorization(r *http.Request) (int, bool) {
-// 	userIDFromContext := r.Context().Value("userID").(string)
-// 	queryValues := r.URL.Query()
-// 	userIDParam := queryValues.Get("userID")
-// 	if userIDFromContext != userIDParam {
-// 		return 0, false
-// 	}
-// 	userID, err := strconv.Atoi(userIDParam)
-// 	if err != nil {
-// 		return 0, false
-// 	}
-// 	return userID, true
+func (h *UserHandler) DeleteProfile(c *gin.Context) {
+	userID := c.GetInt("id")
 
-// }
+	err := h.userHandler.DeleteUser(userID)
+	if err != nil {
+		log.Println(err)
+		c.JSON(500, gin.H{
+			"Error": "Error Deleting User",
+		})
+		c.Abort()
+		return
+	}
+	c.JSON(200, gin.H{
+		"Message": "Successful Delete",
+	})
+}
 
+// Renew token from the refresh token
+func (h *UserHandler) RenewAccessToken(c *gin.Context) {
+	token, err := c.Cookie("refreshToken")
+	if err != nil {
+		c.JSON(400, gin.H{
+			"Error": "Invalid Inputs",
+		})
+		c.Abort()
+		return
+	}
+	jwtWrapper := auth.JwtWrapper{
+		SecretKey:         h.JWTKey,
+		Issuer:            "AuthService",
+		ExpirationMinutes: 30,
+		ExpirationHours:   12,
+	}
+	claims, err := jwtWrapper.ValidateToken(token)
+	if err != nil {
+		c.JSON(401, gin.H{
+			"Error": "Invalid Token",
+		})
+		c.Abort()
+		return
+	}
+	if claims.ExpiresAt < time.Now().Add(time.Minute*30).Unix() {
+		c.JSON(401, gin.H{
+			"Error": "Token is expired",
+		})
+		c.Abort()
+		return
+	}
+	// convert id to int
+	userID, err := strconv.Atoi(claims.Audience)
+	if err != nil {
+		c.JSON(401, gin.H{
+			"Error": "Invalid Token",
+		})
+		c.Abort()
+		return
+	}
+	signedToken, err := jwtWrapper.GenerateToken(userID)
+	if err != nil {
+		log.Println(err)
+		c.JSON(500, gin.H{
+			"Error": "Error Signing Token",
+		})
+		c.Abort()
+		return
+	}
+	token = signedToken
+	c.JSON(200, gin.H{
+		"token": token,
+	})
 
-
-
-
-// handleUsers manages CRUD operations for the User model
-// func (h *NetHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
-// 	// Check if the user is authorized to perform the operation
-// 	userID, isAuthorized := checkAuthorization(r)
-// 	if !isAuthorized {
-// 		http.Error(w, "Invalid user", http.StatusUnauthorized)
-// 		return
-// 	}
-
-
-// 	case http.MethodPut:
-// 		// Assuming the user ID is passed in the URL for update
-// 		var updatedUser models.User
-// 		err := json.NewDecoder(r.Body).Decode(&updatedUser)
-// 		if err != nil {
-// 			http.Error(w, err.Error(), http.StatusBadRequest)
-// 			return
-// 		}
-// 		err = h.netHandler.UpdateUser(userID, updatedUser.Username, updatedUser.FirstName, updatedUser.LastName)
-// 		if err != nil {
-// 			http.Error(w, err.Error(), http.StatusInternalServerError)
-// 			return
-// 		}
-// 		w.WriteHeader(http.StatusOK)
-// 		w.Write([]byte(fmt.Sprintf("Updated User#%d successfully", userID)))
-// 		return
-
-// 	case http.MethodDelete:
-// 		err := h.netHandler.DeleteUser(userID)
-// 		if err != nil {
-// 			http.Error(w, err.Error(), http.StatusInternalServerError)
-// 			return
-// 		}
-// 		w.WriteHeader(http.StatusNoContent)
-// 		return
-// 	}
-// }
+}

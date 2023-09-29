@@ -12,10 +12,10 @@ type UserStore interface {
 	CreateTable() error
 
 	// User operations
-	CreateUser(email string, password string, salt []byte, fullname string) error
-	UpdateUser(email string, password string, fullname string) error
-	DeleteUser(id int, email string) error
-	GetProfileByEmail(email string) (usermodel.User, error)
+	CreateUser(email string, password string, salt []byte, name string) error
+	UpdateUser(id int, email string,  name string) error
+	DeleteUser(id int) error
+	GetUser(id int) (usermodel.User, error)
 	GetUserByEmail(email string) (usermodel.User, error)
 }
 
